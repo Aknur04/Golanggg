@@ -7,10 +7,11 @@
     <list default="true" id="d5e32032-593f-4af1-b710-251eede51f62" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/../Assignment1" beforeDir="false" afterPath="$PROJECT_DIR$/../Assignment1" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/api/errors.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/api/errors.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/api/exercise.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/api/exercise.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/api/helper.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/api/helper.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/api/routes.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/api/routes.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/api/yoga.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/api/yoga.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/data/exercise.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/data/exercise.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/internal/data/runtime.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/data/runtime.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
