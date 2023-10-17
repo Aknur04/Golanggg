@@ -12,7 +12,7 @@ type Exercise struct {
 	Runtime   Runtime   `json:"runtime,omitempty"`
 }
 
-func ValidateExercise(v *validator.Validator, exercise *Exercise) {
+func Validateexercise(v *validator.Validator, exercise *Exercise) {
 	v.Check(exercise.Title != "", "title", "must be provided")
 	v.Check(len(exercise.Title) <= 500, "title", "must not be more than 500 bytes long")
 	v.Check(exercise.Runtime != 0, "runtime", "must be provided")

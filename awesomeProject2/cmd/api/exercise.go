@@ -47,7 +47,7 @@ func (app *application) createexerciseHandler(w http.ResponseWriter, r *http.Req
 	v := validator.New()
 	// Call the ValidateMovie() function and return a response containing the errors if
 	// any of the checks fail.
-	if data.ValidateExercise(v, exercise); !v.Valid() {
+	if data.Validateexercise(v, exercise); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
