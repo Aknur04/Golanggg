@@ -1,0 +1,1 @@
+ALTER TABLE exercise DROP CONSTRAINT IF EXISTS exercise_runtime_check;
