@@ -154,7 +154,7 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 		if err != nil {
 			return nil, Metadata{}, err // Update this to return an empty Metadata struct.
 		}
-		exercises = append(exercises, &Exercise)
+		exercises = append(exercises, &exercise)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, Metadata{}, err // Update this to return an empty Metadata struct.
