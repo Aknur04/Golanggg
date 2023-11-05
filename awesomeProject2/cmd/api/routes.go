@@ -17,5 +17,5 @@ func (app *application) routes() *httprouter.Router {
 	// Require a PATCH request, rather than PUT.
 	router.HandlerFunc(http.MethodPatch, "/v1/exercise/:id", app.updateexerciseHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/exercise/:id", app.deleteexerciseHandler)
-	return router
+	return app.recoverPanic(router)
 }
