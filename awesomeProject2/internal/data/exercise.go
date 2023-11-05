@@ -5,6 +5,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -120,4 +122,46 @@ WHERE id = $1`
 		return ErrRecordNotFound
 	}
 	return nil
+}
+func (e ExerciseModel) GetAll(title string, filters Filters) ([]*Exercise, Metadata, error) {
+	query := fmt.Sprintf(`
+SELECT count(*) OVER(), id, created_at, title, runtime
+FROM exercise
+WHERE (to_tsvector('simple', title) @@ plainto_tsquery('simple', $1) OR $1 = '')
+AND (title @> $2 OR $2 = '{}')
+ORDER BY %s %s, id ASC
+LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	args := []interface{}{title, pq.Array(title), filters.limit(), filters.offset()}
+	rows, err := e.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err // Update this to return an empty Metadata struct.
+	}
+	defer rows.Close()
+	// Declare a totalRecords variable.
+	totalRecords := 0
+	exercises := []*Exercise{}
+	for rows.Next() {
+		var exercise Exercise
+		err := rows.Scan(
+			&totalRecords, // Scan the count from the window function into totalRecords.
+			&exercise.ID,
+			&exercise.CreatedAt,
+			&exercise.Title,
+			&exercise.Runtime,
+		)
+		if err != nil {
+			return nil, Metadata{}, err // Update this to return an empty Metadata struct.
+		}
+		exercises = append(exercises, &Exercise)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err // Update this to return an empty Metadata struct.
+	}
+	// Generate a Metadata struct, passing in the total record count and pagination
+	// parameters from the client.
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	// Include the metadata struct when returning.
+	return exercises, metadata, nil
 }

@@ -154,3 +154,32 @@ func (app *application) deleteexerciseHandler(w http.ResponseWriter, r *http.Req
 		app.serverErrorResponse(w, r, err)
 	}
 }
+
+func (app *application) listexerciseHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Title string
+		data.Filters
+	}
+	v := validator.New()
+	qs := r.URL.Query()
+	input.Title = app.readString(qs, "title", "")
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "title", "runtime", "-id", "-title", "-runtime"}
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+	// Accept the metadata struct as a return value.
+	exercise, metadata, err := app.models.Exercises.GetAll(input.Title, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+	// Include the metadata in the response envelope.
+	err = app.writeJSON(w, http.StatusOK, envelope{"exercise": exercise, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}
