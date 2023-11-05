@@ -44,12 +44,10 @@ func main() {
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
-	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("Admin_DB_DSN"), "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GREENLIGHT_DB_DSN"), "PostgreSQL DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
 	flag.StringVar(&cfg.db.maxIdleTime, "db-max-idle-time", "15m", "PostgreSQL max connection idle time")
-	// Create command line flags to read the setting values into the config struct.
-	// Notice that we use true as the default for the 'enabled' setting?
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
@@ -60,12 +58,10 @@ func main() {
 	logger := jsonlog.New(os.Stdout, jsonlog.LevelInfo)
 	db, err := openDB(cfg)
 	if err != nil {
-		// Use the PrintFatal() method to write a log entry containing the error at the
-		// FATAL level and exit. We have no additional properties to include in the log
-		// entry, so we pass nil as the second parameter.
 		logger.PrintFatal(err, nil)
 	}
 	defer db.Close()
+
 	// Likewise use the PrintInfo() method to write a message at the INFO level.
 	logger.PrintInfo("database connection pool established", nil)
 	app := &application{
@@ -73,6 +69,7 @@ func main() {
 		logger: logger,
 		models: data.NewModels(db),
 	}
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
 		Handler:      app.routes(),
@@ -80,6 +77,11 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+	err = app.serve()
+	if err != nil {
+		logger.PrintFatal(err, nil)
+	}
+
 	// Again, we use the PrintInfo() method to write a "starting server" message at the
 	// INFO level. But this time we pass a map containing additional properties (the
 	// operating environment and server address) as the final parameter.
