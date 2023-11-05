@@ -71,14 +71,12 @@ func (app *application) createexerciseHandler(w http.ResponseWriter, r *http.Req
 	}
 }
 func (app *application) updateexerciseHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract the movie ID from the URL.
 	id, err := app.readIDParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
 		return
 	}
-	// Fetch the existing movie record from the database, sending a 404 Not Found
-	// response to the client if we couldn't find a matching record.
+	// Retrieve the movie record as normal.
 	exercise, err := app.models.Exercises.Get(id)
 	if err != nil {
 		switch {
@@ -89,29 +87,39 @@ func (app *application) updateexerciseHandler(w http.ResponseWriter, r *http.Req
 		}
 		return
 	}
+
+	// Use pointers for the Title, Year and Runtime fields.
 	var input struct {
-		Title   string       `json:"title"`
-		Runtime data.Runtime `json:"runtime"`
+		Title   *string       `json:"title"`
+		Runtime *data.Runtime `json:"runtime"`
 	}
-	// Read the JSON request body data into the input struct.
+	// Decode the JSON as normal.
 	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
 	}
 
-	exercise.Title = input.Title
-	exercise.Runtime = input.Runtime
-
+	if input.Title != nil {
+		exercise.Title = *input.Title
+	}
+	// We also do the same for the other fields in the input struct.
+	if input.Runtime != nil {
+		exercise.Runtime = *input.Runtime
+	}
 	v := validator.New()
 	if data.Validateexercise(v, exercise); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-
 	err = app.models.Exercises.Update(exercise)
 	if err != nil {
-		app.serverErrorResponse(w, r, err)
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
 		return
 	}
 
@@ -119,6 +127,7 @@ func (app *application) updateexerciseHandler(w http.ResponseWriter, r *http.Req
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
+
 }
 
 func (app *application) deleteexerciseHandler(w http.ResponseWriter, r *http.Request) {

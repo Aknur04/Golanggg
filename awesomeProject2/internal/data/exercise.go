@@ -2,6 +2,7 @@ package data
 
 import (
 	"awesomeProject2/internal/validator"
+	"context"
 	"database/sql"
 	"errors"
 	"time"
@@ -25,28 +26,39 @@ type ExerciseModel struct {
 	DB *sql.DB
 }
 
-func (e ExerciseModel) Get(id int64) (*Exercise, error) {
+func (e ExerciseModel) Insert(exercise *Exercise) error {
+	query := `
+             INSERT INTO movies (title, runtime)
+             VALUES ($1, $2)
+             RETURNING id, created_at`
+	args := []interface{}{exercise.Title, exercise.Runtime}
 
+	return e.DB.QueryRow(query, args...).Scan(&exercise.ID, &exercise.CreatedAt)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	// Use QueryRowContext() and pass the context as the first argument.
+	return e.DB.QueryRowContext(ctx, query, args...).Scan(&exercise.ID, &exercise.CreatedAt)
+}
+
+func (e ExerciseModel) Get(id int64) (*Exercise, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
-
+	// Remove the pg_sleep(10) clause.
 	query := `
-               SELECT id, created_at, title, runtime
-               FROM exercise
-               WHERE id = $1`
-
+SELECT id, created_at, title, runtime
+FROM exercise
+WHERE id = $1`
 	var exercise Exercise
-
-	err := e.DB.QueryRow(query, id).Scan(
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	// Remove &[]byte{} from the first Scan() destination.
+	err := e.DB.QueryRowContext(ctx, query, id).Scan(
 		&exercise.ID,
 		&exercise.CreatedAt,
 		&exercise.Title,
 		&exercise.Runtime,
 	)
-	// Handle any errors. If there was no matching movie found, Scan() will return
-	// a sql.ErrNoRows error. We check for this and return our custom ErrRecordNotFound
-	// error instead.
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -55,61 +67,57 @@ func (e ExerciseModel) Get(id int64) (*Exercise, error) {
 			return nil, err
 		}
 	}
-	// Otherwise, return a pointer to the Movie struct.
 	return &exercise, nil
 }
 
 func (e ExerciseModel) Update(exercise *Exercise) error {
-	// Declare the SQL query for updating the record and returning the new version
-	// number.
 	query := `
-          UPDATE exercise
-          SET title = $1, runtime = $3
-          WHERE id = $5
-          RETURNING title`
-	// Create an args slice containing the values for the placeholder parameters.
+UPDATE exercise
+SET title = $1, runtime = runtime + 1
+WHERE id = $2 AND runtime = $3
+RETURNING runtime`
 	args := []interface{}{
 		exercise.Title,
 		exercise.Runtime,
 		exercise.ID,
 	}
-	// Use the QueryRow() method to execute the query, passing in the args slice as a
-	// variadic parameter and scanning the new version value into the movie struct.
-	return e.DB.QueryRow(query, args...).Scan(&exercise.Title)
-}
-
-func (e ExerciseModel) Delete(id int64) error {
-
-	if id < 1 {
-		return ErrRecordNotFound
-	}
-
-	query := `
-          DELETE FROM exercise
-          WHERE id = $1`
-	result, err := e.DB.Exec(query, id)
+	// Create a context with a 3-second timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	// Use QueryRowContext() and pass the context as the first argument.
+	err := e.DB.QueryRowContext(ctx, query, args...).Scan(&exercise.Runtime)
 	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return ErrRecordNotFound
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
 	}
 	return nil
 }
 
-func (e ExerciseModel) Insert(exercise *Exercise) error {
+func (e ExerciseModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
 	query := `
-          INSERT INTO exercise (title, runtime)
-          VALUES ($1, $2)
-          RETURNING id, created_at`
-
-	args := []interface{}{exercise.Title, exercise.Runtime}
-
-	return e.DB.QueryRow(query, args...).Scan(&exercise.ID, &exercise.CreatedAt)
+DELETE FROM exercise
+WHERE id = $1`
+	// Create a context with a 3-second timeout.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	// Use ExecContext() and pass the context as the first argument.
+	result, err := e.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }

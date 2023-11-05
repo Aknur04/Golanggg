@@ -12,9 +12,8 @@ func (app *application) routes() *httprouter.Router {
 	router.HandlerFunc(http.MethodGet, "/v1/yoga", app.yogaHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/exercise", app.createexerciseHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/exercise/:id", app.showexerciseHandler)
-	// Add the route for the PUT /v1/movies/:id endpoint.
-	router.HandlerFunc(http.MethodPut, "/v1/exercise/:id", app.updateexerciseHandler)
+	// Require a PATCH request, rather than PUT.
+	router.HandlerFunc(http.MethodPatch, "/v1/exercise/:id", app.updateexerciseHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/exercise/:id", app.deleteexerciseHandler)
-
 	return router
 }
