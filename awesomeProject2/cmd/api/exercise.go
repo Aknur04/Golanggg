@@ -149,7 +149,7 @@ func (app *application) deleteexerciseHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	// Return a 200 OK status code along with a success message.
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfully deleted"}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "exerciseF successfully deleted"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

@@ -19,25 +19,21 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		app.badRequestResponse(w, r, err)
 		return
 	}
-
 	user := &data.User{
 		Name:      input.Name,
 		Email:     input.Email,
 		Activated: false,
 	}
-
 	err = user.Password.Set(input.Password)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 	v := validator.New()
-
 	if data.ValidateUser(v, user); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
-
 	err = app.models.Users.Insert(user)
 	if err != nil {
 		switch {
@@ -50,6 +46,11 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 	token, err := app.models.Tokens.New(user.ID, 3*24*time.Hour, data.ScopeActivation)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -60,7 +61,6 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 			"activationToken": token.Plaintext,
 			"userID":          user.ID,
 		}
-		// Send the welcome email, passing in the map above as dynamic data.
 		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
 			app.logger.PrintError(err, nil)
@@ -70,7 +70,6 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
-
 }
 
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {

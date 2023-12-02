@@ -30,7 +30,7 @@ type ExerciseModel struct {
 
 func (e ExerciseModel) Insert(exercise *Exercise) error {
 	query := `
-             INSERT INTO movies (title, runtime)
+             INSERT INTO exercise (title, runtime)
              VALUES ($1, $2)
              RETURNING id, created_at`
 	args := []interface{}{exercise.Title, exercise.Runtime}
@@ -38,7 +38,6 @@ func (e ExerciseModel) Insert(exercise *Exercise) error {
 	return e.DB.QueryRow(query, args...).Scan(&exercise.ID, &exercise.CreatedAt)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// Use QueryRowContext() and pass the context as the first argument.
 	return e.DB.QueryRowContext(ctx, query, args...).Scan(&exercise.ID, &exercise.CreatedAt)
 }
 
@@ -46,7 +45,6 @@ func (e ExerciseModel) Get(id int64) (*Exercise, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}
-	// Remove the pg_sleep(10) clause.
 	query := `
 SELECT id, created_at, title, runtime
 FROM exercise
@@ -54,7 +52,6 @@ WHERE id = $1`
 	var exercise Exercise
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// Remove &[]byte{} from the first Scan() destination.
 	err := e.DB.QueryRowContext(ctx, query, id).Scan(
 		&exercise.ID,
 		&exercise.CreatedAt,
@@ -83,10 +80,8 @@ RETURNING runtime`
 		exercise.Runtime,
 		exercise.ID,
 	}
-	// Create a context with a 3-second timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// Use QueryRowContext() and pass the context as the first argument.
 	err := e.DB.QueryRowContext(ctx, query, args...).Scan(&exercise.Runtime)
 	if err != nil {
 		switch {
@@ -104,12 +99,12 @@ func (e ExerciseModel) Delete(id int64) error {
 		return ErrRecordNotFound
 	}
 	query := `
-DELETE FROM exercise
-WHERE id = $1`
-	// Create a context with a 3-second timeout.
+		DELETE FROM exercise
+		WHERE id = $1`
+
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	// Use ExecContext() and pass the context as the first argument.
+
 	result, err := e.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
@@ -159,9 +154,8 @@ LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 	if err = rows.Err(); err != nil {
 		return nil, Metadata{}, err // Update this to return an empty Metadata struct.
 	}
-	// Generate a Metadata struct, passing in the total record count and pagination
-	// parameters from the client.
+
 	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
-	// Include the metadata struct when returning.
+
 	return exercises, metadata, nil
 }
