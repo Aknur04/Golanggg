@@ -15,6 +15,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/exercise/:id", app.showexerciseHandler)
 	router.HandlerFunc(http.MethodPatch, "/v1/exercise/:id", app.updateexerciseHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/exercise/:id", app.deleteexerciseHandler)
+	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	// Wrap the router with the rateLimit() middleware.
 	return app.recoverPanic(app.rateLimit(router))
 }
