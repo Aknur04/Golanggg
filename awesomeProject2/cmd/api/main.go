@@ -7,10 +7,9 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"fmt"
 	_ "github.com/lib/pq"
-	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -37,6 +36,9 @@ type config struct {
 		username string
 		password string
 		sender   string
+	}
+	cors struct {
+		trustedOrigins []string
 	}
 }
 
@@ -65,6 +67,12 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "09b9a644c45afc", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "63bc18edf8d484", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@awesomeProject2>", "SMTP sender")
+
+	flag.Func("cors-trusted-origins", "Trusted CORS origins (space separated)", func(val string) error {
+		cfg.cors.trustedOrigins = strings.Fields(val)
+		return nil
+	})
+
 	flag.Parse()
 
 	// Initialize a new jsonlog.Logger which writes any messages *at or above* the INFO
@@ -85,28 +93,10 @@ func main() {
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 	}
 
-	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      app.routes(),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 30 * time.Second,
-	}
 	err = app.serve()
 	if err != nil {
 		logger.PrintFatal(err, nil)
 	}
-
-	// Again, we use the PrintInfo() method to write a "starting server" message at the
-	// INFO level. But this time we pass a map containing additional properties (the
-	// operating environment and server address) as the final parameter.
-	logger.PrintInfo("starting server", map[string]string{
-		"addr": srv.Addr,
-		"env":  cfg.env,
-	})
-	err = srv.ListenAndServe()
-	// Use the PrintFatal() method to log the error and exit.
-	logger.PrintFatal(err, nil)
 }
 
 // The openDB() function returns a sql.DB connection pool.
