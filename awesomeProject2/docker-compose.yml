@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  greenlight:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-container
+    environment:
+      - GREENLIGHT_DB_DSN=postgres://twoday:Admin@db:5432/twoday?sslmode=disable
+      - PORT=4000
+    networks:
+      - dev
+    ports:
+      - "4000:4000"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: twoday
+      POSTGRES_PASSWORD: "Admin"
+      POSTGRES_DB: twoday
+    networks:
+      - dev
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+
+
+networks:
+  dev:
+    driver: bridge
+
+volumes:
+  postgres:
